@@ -1,4 +1,5 @@
 # Blink LED with RaspberryPi
+[HackMD Link](https://hackmd.io/@coherent17/B1FldXwc5)
 [TOC]
 ## Instaling WiringPi Package
 
@@ -113,10 +114,10 @@ BIN = blink
 all: $(BIN)
 
 %: %.c
-    $(CC) $(CFLAGS) $< -o $@ $(LINKER)
+	$(CC) $(CFLAGS) $< -o $@ $(LINKER)
 
 clean:
-    rm -rf $(BIN)
+	rm -rf $(BIN)
 ```
 
 ```bash=
@@ -189,10 +190,10 @@ BIN = blink blink_improved
 all: $(BIN)
 
 %: %.c
-    $(CC) $(CFLAGS) $< -o $@ $(LINKER)
+	$(CC) $(CFLAGS) $< -o $@ $(LINKER)
 
 clean:
-    rm -rf $(BIN)
+	rm -rf $(BIN)
 ```
 
 Finally, we get three methods to terminate the program with GPIO states reset to default INPUT state. We can check by using gpio readall to monitor all states.
@@ -262,7 +263,7 @@ int main(){
 }
 ```
 
-## Using Python
+## Using Python and RPi package
 
 ```python=
 import RPi.GPIO as GPIO
@@ -278,17 +279,112 @@ GPIO.setup(led1, GPIO.OUT)
 GPIO.setup(led2, GPIO.OUT)
 
 try:
-    while(True):
-        GPIO.output(led1, True)
-        time.sleep(0.5)
-        GPIO.output(led1, False)
-        time.sleep(0.5)
+	while(True):
+		GPIO.output(led1, True)
+		time.sleep(0.5)
+		GPIO.output(led1, False)
+		time.sleep(0.5)
 
-        GPIO.output(led2, True)
-        time.sleep(0.5)
-        GPIO.output(led2, False)
-        time.sleep(0.5)
+		GPIO.output(led2, True)
+		time.sleep(0.5)
+		GPIO.output(led2, False)
+		time.sleep(0.5)
 
 except KeyboardInterrupt:
-    GPIO.cleanup()
+	GPIO.cleanup()
 ```
+
+## Breathing Light
+Through changing duty cycle of the output voltage, we can generate the different brightness of led.
+
+```python=
+import RPi.GPIO as GPIO
+import time
+
+#using BCM system:
+GPIO.setmode(GPIO.BCM)
+
+led1 = 19
+led2 = 26
+frequency = 120
+
+GPIO.setup(led1, GPIO.OUT)
+GPIO.setup(led2, GPIO.OUT)
+
+led_pwm = []
+led_pwm.append(GPIO.PWM(led1, frequency))
+led_pwm.append(GPIO.PWM(led2, frequency))
+
+for led in led_pwm:
+	led.start(0)
+
+try:
+	while(True):
+		#become lighter through change the duty cycle
+		for i in range(0, 80, 5):
+			for led in led_pwm:
+				led.ChangeDutyCycle(i)
+				time.sleep(0.1)
+
+		#become darker
+		for i in range(80, 0, -5):
+			for led in led_pwm:
+				led.ChangeDutyCycle(i)
+				time.sleep(0.1)		
+
+except KeyboardInterrupt:
+	for led in led_pwm:
+		led.stop()
+	GPIO.cleanup()
+```
+Result:
+{%youtube YU6Xn6yW3iw%}
+
+If using C code to output the pwm, not all pin can generate the pwm output. Therefore, I using BCM18 to output.
+
+![](https://i.imgur.com/wp59aSb.png)
+
+```c=
+#include <wiringPi.h>
+#include <signal.h>
+
+//using default wPi numbering scheme
+#define LED1 18
+
+int blink = 1;
+
+void cleanup(int signal){
+    blink = 0;
+    digitalWrite(LED1, LOW);
+    pinMode(LED1, INPUT);
+}
+
+int main(){
+
+    //setting the abrupt condition
+    signal(SIGINT, cleanup);    //if user press ctrl + c, then do cleanup
+    signal(SIGTERM, cleanup);   //if program terminated with kill command
+    signal(SIGHUP, cleanup);    //if terminal windows closed
+
+    //initialize wiringPi
+    wiringPiSetupGpio();    // <- change to Gpio
+    pinMode(LED1, PWM_OUTPUT);
+
+    while(blink){
+        //become brighter
+        for(int i = 0; i < 1024; i++){
+            pwmWrite(LED1, i);
+            delay(1);
+        }
+
+        //become darker
+        for(int i = 1023; i >= 0; i--){
+            pwmWrite(LED1, i);
+            delay(1);
+        }
+    }
+    return 0;
+}
+```
+Result:
+{%youtube qa07nnJS-pA%}
