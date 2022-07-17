@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -g -Wall
-LINKER = -lwiringPi
+LINKER = -lwiringPi -lpthread
 
-BIN = blink blink_improved blink_bcm_numsystem
+BIN = blink blink_improved blink_bcm_numsystem breathingLight
 
 all: $(BIN)
 
