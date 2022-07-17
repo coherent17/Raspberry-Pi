@@ -113,10 +113,10 @@ BIN = blink
 all: $(BIN)
 
 %: %.c
-	$(CC) $(CFLAGS) $< -o $@ $(LINKER)
+    $(CC) $(CFLAGS) $< -o $@ $(LINKER)
 
 clean:
-	rm -rf $(BIN)
+    rm -rf $(BIN)
 ```
 
 ```bash=
@@ -131,6 +131,7 @@ Result:
 If terminate the program with Ctrl C, the command will interupt the code in infinite while loop, therefore, our pinMode still remain OUTPUT mode, and one of LED still on after the program terminated. Of course we can still use bash command to reset all states to default, but it is the response to this little program.
 
 ### Adding Interupt Signal into program (blink_improved.c):
+[reference: Sending and Handling Signals in C (kill, signal, sigaction)](https://youtu.be/83M5-NPDeWs)
 ```c=
 #include <wiringPi.h>
 #include <signal.h>
@@ -188,10 +189,10 @@ BIN = blink blink_improved
 all: $(BIN)
 
 %: %.c
-	$(CC) $(CFLAGS) $< -o $@ $(LINKER)
+    $(CC) $(CFLAGS) $< -o $@ $(LINKER)
 
 clean:
-	rm -rf $(BIN)
+    rm -rf $(BIN)
 ```
 
 Finally, we get three methods to terminate the program with GPIO states reset to default INPUT state. We can check by using gpio readall to monitor all states.
@@ -259,4 +260,35 @@ int main(){
 
     return 0;
 }
+```
+
+## Using Python
+
+```python=
+import RPi.GPIO as GPIO
+import time
+
+#using BCM system:
+GPIO.setmode(GPIO.BCM)
+
+led1 = 19
+led2 = 26
+
+GPIO.setup(led1, GPIO.OUT)
+GPIO.setup(led2, GPIO.OUT)
+
+try:
+    while(True):
+        GPIO.output(led1, True)
+        time.sleep(0.5)
+        GPIO.output(led1, False)
+        time.sleep(0.5)
+
+        GPIO.output(led2, True)
+        time.sleep(0.5)
+        GPIO.output(led2, False)
+        time.sleep(0.5)
+
+except KeyboardInterrupt:
+    GPIO.cleanup()
 ```
